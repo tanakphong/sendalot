@@ -1,17 +1,27 @@
 package com.deverdie.sendalot;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.location.Location;
+import android.location.LocationListener;
 import android.net.ConnectivityManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Toast;
 
 import com.deverdie.sendalot.receivers.NetworkChangeReceiver;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationAvailability;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
 import com.karumi.dexter.Dexter;
 import com.karumi.dexter.MultiplePermissionsReport;
 import com.karumi.dexter.PermissionToken;
@@ -23,9 +33,11 @@ import com.karumi.dexter.listener.single.PermissionListener;
 
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener{
+public class MainActivity extends AppCompatActivity implements View.OnClickListener, GoogleApiClient.ConnectionCallbacks,
+        GoogleApiClient.OnConnectionFailedListener, LocationListener {
 
     private BroadcastReceiver mNetworkReceiver;
+    private GoogleApiClient googleApiClient;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,6 +46,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         checkCameraAndWriteExternalStoragePermission();
         bindView();
         broadcastReceiver();
+
+
+        googleApiClient = new GoogleApiClient.Builder(this)
+                .addApi(LocationServices.API)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .build();
     }
 
     private void broadcastReceiver() {
@@ -47,12 +66,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 .withListener(new PermissionListener() {
                     @Override
                     public void onPermissionGranted(PermissionGrantedResponse response) {
-                        Toast.makeText(getApplicationContext(),response.getPermissionName()+" Granted.",Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getApplicationContext(), response.getPermissionName() + " Granted.", Toast.LENGTH_SHORT).show();
                     }
 
                     @Override
                     public void onPermissionDenied(PermissionDeniedResponse response) {
-                        Toast.makeText(getApplicationContext(),response.getPermissionName()+" Denied.",Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getApplicationContext(), response.getPermissionName() + " Denied.", Toast.LENGTH_SHORT).show();
                     }
 
                     @Override
@@ -65,7 +84,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void checkCameraAndWriteExternalStoragePermission() {
         Dexter.withActivity(this)
-                .withPermissions(Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                .withPermissions(Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                        Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
                 .withListener(new MultiplePermissionsListener() {
                     @Override
                     public void onPermissionsChecked(MultiplePermissionsReport report) {
@@ -105,9 +125,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    public static void dialog(boolean value){
+    public static void dialog(boolean value) {
 
-        if(value){
+        if (value) {
 //            tv_check_connection.setText("We are back !!!");
 //            tv_check_connection.setBackgroundColor(Color.GREEN);
 //            tv_check_connection.setTextColor(Color.WHITE);
@@ -120,7 +140,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 //                }
 //            };
 //            handler.postDelayed(delayrunnable, 3000);
-        }else {
+        } else {
 //            tv_check_connection.setVisibility(View.VISIBLE);
 //            tv_check_connection.setText("Could not Connect to internet");
 //            tv_check_connection.setBackgroundColor(Color.RED);
@@ -147,8 +167,77 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     @Override
+    protected void onStart() {
+        super.onStart();
+        googleApiClient.connect();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (googleApiClient.isConnected()) {
+            googleApiClient.disconnect();
+        }
+    }
+
+    @Override
     public void onDestroy() {
         super.onDestroy();
         unregisterNetworkChanges();
     }
+
+    @Override
+    public void onLocationChanged(Location location) {
+
+    }
+
+    @Override
+    public void onStatusChanged(String s, int i, Bundle bundle) {
+
+    }
+
+    @Override
+    public void onProviderEnabled(String s) {
+
+    }
+
+    @Override
+    public void onProviderDisabled(String s) {
+
+    }
+
+    @Override
+    public void onConnected(@Nullable Bundle bundle) {
+
+        // Do something when connected with Google API Client
+        @SuppressLint("MissingPermission") LocationAvailability locationAvailability = LocationServices.FusedLocationApi.getLocationAvailability(googleApiClient);
+        if (locationAvailability.isLocationAvailable()) {
+            // Call Location Services
+//            LocationRequest locationRequest = LocationRequest.create().apply
+//            {
+//                priority = LocationRequest.PRIORITY_HIGH_ACCURACY;
+//                interval = 5000;
+//            }
+            LocationRequest locationRequest = new LocationRequest()
+                    .setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY)
+                    .setInterval(5000);
+//            LocationServices.FusedLocationApi.requestLocationUpdates(googleApiClient, locationRequest, this);
+//            LocationServices.FusedLocationApi.requestLocationUpdates(googleApiClient, locationRequest, this);
+            LocationServices.FusedLocationApi.requestLocationUpdates(googleApiClient, locationRequest, this);
+        } else {
+            // Do something when Location Provider not available
+        }
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+
+    }
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+
+    }
+
+
 }
