@@ -6,13 +6,13 @@ import android.content.BroadcastReceiver;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.location.Location;
-import android.location.LocationListener;
 import android.net.ConnectivityManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
@@ -20,6 +20,7 @@ import com.deverdie.sendalot.receivers.NetworkChangeReceiver;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationAvailability;
+import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.karumi.dexter.Dexter;
@@ -36,6 +37,7 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity implements View.OnClickListener, GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener, LocationListener {
 
+    private static final String TAG = MainActivity.class.getSimpleName();
     private BroadcastReceiver mNetworkReceiver;
     private GoogleApiClient googleApiClient;
 
@@ -175,42 +177,31 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onStop() {
         super.onStop();
-        if (googleApiClient.isConnected()) {
-            googleApiClient.disconnect();
-        }
+//        if (googleApiClient.isConnected()) {
+//            googleApiClient.disconnect();
+//        }
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        unregisterNetworkChanges();
+//        unregisterNetworkChanges();
     }
 
     @Override
     public void onLocationChanged(Location location) {
-
+//        mCurrentLocation = location;
+//        mLastUpdateTime = DateFormat.getDateFormat(getActivity()).format(new Date());
+        Toast.makeText(getApplicationContext(), location.toString() + "", Toast.LENGTH_SHORT).show();
+        Log.i(TAG, "onLocationChanged: " + location.toString());
     }
 
-    @Override
-    public void onStatusChanged(String s, int i, Bundle bundle) {
-
-    }
-
-    @Override
-    public void onProviderEnabled(String s) {
-
-    }
-
-    @Override
-    public void onProviderDisabled(String s) {
-
-    }
-
+    @SuppressLint("MissingPermission")
     @Override
     public void onConnected(@Nullable Bundle bundle) {
 
         // Do something when connected with Google API Client
-        @SuppressLint("MissingPermission") LocationAvailability locationAvailability = LocationServices.FusedLocationApi.getLocationAvailability(googleApiClient);
+        LocationAvailability locationAvailability = LocationServices.FusedLocationApi.getLocationAvailability(googleApiClient);
         if (locationAvailability.isLocationAvailable()) {
             // Call Location Services
 //            LocationRequest locationRequest = LocationRequest.create().apply
